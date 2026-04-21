@@ -1,14 +1,20 @@
 #include <iostream>
 #include <cstdint>
 #include <vector>
+#include <tuple>
 #include <cmath> // Adicionado para std::sqrt
 #include <SDL2/SDL.h>
 
-#define CELL_SIZE 60
+
 
 // Constantes globais para o mapa evitam "Magic Numbers" e cálculos repetitivos
 constexpr int MAP_WIDTH = 8;
-constexpr int MAP_HEIGHT = 4;
+constexpr int MAP_HEIGHT = 8;
+// Screen size
+constexpr int SCREEN_WIDTH = 1920;
+constexpr int SCREEN_HEIGHT= 1080;
+// Cell size
+constexpr int CELL_SIZE = 60;
 
 struct Vector2D {
 	float x, y;
@@ -34,6 +40,11 @@ struct Player {
 	float angle;
 
 	Player() : position(90.0f, 90.0f), speed(150.0f), angle(0.0f) {}
+};
+
+struct deltaDist {
+	float x;
+	float y;
 };
 
 // OTIMIZAÇÃO 1: Vetor 1D para o mapa (Cache Locality)
@@ -93,6 +104,90 @@ static void MovePlayer(const MapGrid& map, Player& player, float dirX, float dir
 	}
 }
 
+static void updateFakeCamera(Player* player, int deltaX, float deltaSeconds) {
+	player->angle += deltaX * 0.002f;  // sensitivity
+}
+
+static void Raycast(const MapGrid& map, Player& player, SDL_Renderer* renderer)
+{
+	float fov = M_PI / 3.0f;
+
+	for (int col = 0; col < SCREEN_WIDTH; col++) {
+		float rayAngle = player.angle - fov / 2.0f + (col * fov / SCREEN_WIDTH);
+
+		float dirX = cos(rayAngle);
+		float dirY = sin(rayAngle);
+
+		int mapX = static_cast<int>(player.position.x) / CELL_SIZE;
+		int mapY = static_cast<int>(player.position.y) / CELL_SIZE;
+
+		float deltaDistX = (dirX == 0) ? 1e30f : std::abs(CELL_SIZE / dirX);
+		float deltaDistY = (dirY == 0) ? 1e30f : std::abs(CELL_SIZE / dirY);
+
+		int stepX = (dirX > 0) ? 1 : -1;
+		int stepY = (dirY > 0) ? 1 : -1;
+
+		float sideDistX, sideDistY;
+		if (dirX > 0)
+			sideDistX = ((mapX + 1) * CELL_SIZE - player.position.x) / dirX;
+		else
+			sideDistX = (player.position.x - mapX * CELL_SIZE) / -dirX;
+
+		if (dirY > 0)
+			sideDistY = ((mapY + 1) * CELL_SIZE - player.position.y) / dirY;
+		else
+			sideDistY = (player.position.y - mapY * CELL_SIZE) / -dirY;
+
+		bool hit = false;
+		int side = 0;
+
+		while (!hit) {
+			if (sideDistX < sideDistY) {
+				sideDistX += deltaDistX;
+				mapX += stepX;
+				side = 0;
+			}
+			else {
+				sideDistY += deltaDistY;
+				mapY += stepY;
+				side = 1;
+			}
+
+			// bounds check!
+			if (mapY < 0 || mapY >= MAP_HEIGHT || mapX < 0 || mapX >= MAP_WIDTH) break;
+
+			if (map[mapY * MAP_WIDTH + mapX].wallType == PlaneType::WALL)
+				hit = true;
+		}
+
+		if (!hit) continue;
+
+		// Distância corrigida (sem fisheye)
+		float perpWallDist = (side == 0)
+			? sideDistX - deltaDistX
+			: sideDistY - deltaDistY;
+
+		if (perpWallDist <= 0) continue;
+
+		// Altura da coluna
+		int lineHeight = static_cast<int>(CELL_SIZE * SCREEN_HEIGHT / perpWallDist);
+
+		int drawStart = SCREEN_HEIGHT / 2 - lineHeight / 2;
+		int drawEnd = SCREEN_HEIGHT / 2 + lineHeight / 2;
+
+		if (drawStart < 0) drawStart = 0;
+		if (drawEnd > SCREEN_HEIGHT) drawEnd = SCREEN_HEIGHT;
+
+		// Cor diferente se bateu em X ou Y (dá profundidade!)
+		if (side == 0)
+			SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+		else
+			SDL_SetRenderDrawColor(renderer, 130, 130, 130, 255);
+
+		SDL_RenderDrawLine(renderer, col, drawStart, col, drawEnd);
+	}
+}
+
 int main(int argc, char* argv[]) {
 
 	// Correção: Adicionado os itens faltantes para formar um grid perfeito de 8x4
@@ -107,6 +202,18 @@ int main(int argc, char* argv[]) {
 		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
 		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
 		// Row 3
+		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
+		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
+		// Row 4
+		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
+		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
+		// Row 5
+		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
+		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
+		// Row 6
+		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
+		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
+		// Row 7
 		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
 		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
 	};
@@ -115,7 +222,7 @@ int main(int argc, char* argv[]) {
 
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) return -1;
 
-	SDL_Window* window = SDL_CreateWindow("wolf3d", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_SHOWN);
+	SDL_Window* window = SDL_CreateWindow("wolf3d", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	if (!window) return 1;
 
 	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -126,6 +233,10 @@ int main(int argc, char* argv[]) {
 	// OTIMIZAÇÃO 5: Estrutura correta de Game Loop
 	uint64_t lastTime = SDL_GetTicks64();
 	uint64_t debugTimer = 0;
+
+	// Grab mouse for FPS
+	SDL_SetRelativeMouseMode(SDL_TRUE);
+
 
 	while (running) {
 		// --- 1. CÁLCULO DE TEMPO (Deltas e Ticks) ---
@@ -147,17 +258,33 @@ int main(int argc, char* argv[]) {
 			if (event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)) {
 				running = false;
 			}
+			if (event.type == SDL_MOUSEMOTION) {
+				// xrel e yrel são o deslocamento (delta)
+				int deltaX = event.motion.xrel;
+				int deltaY = event.motion.yrel;
+
+				// Use esses valores para rotacionar sua câmera
+				updateFakeCamera(&player, deltaX, deltaSeconds);
+			}
 		}
 
 		// --- 3. LÓGICA E FÍSICA ---
 		const Uint8* keys = SDL_GetKeyboardState(nullptr);
+		
 		float inputX = 0.0f, inputY = 0.0f;
 
-		if (keys[SDL_SCANCODE_W]) inputY += 1.0f;
-		if (keys[SDL_SCANCODE_S]) inputY -= 1.0f;
-		if (keys[SDL_SCANCODE_A]) inputX -= 1.0f;
-		if (keys[SDL_SCANCODE_D]) inputX += 1.0f;
-
+		if (keys[SDL_SCANCODE_W]) {
+			MovePlayer(map, player, cos(player.angle), -sin(player.angle), deltaSeconds);
+		}
+		if (keys[SDL_SCANCODE_S]) {
+			MovePlayer(map, player, -cos(player.angle), sin(player.angle), deltaSeconds);
+		}		
+		// Strafe correto — perpendicular ao ângulo:
+		if (keys[SDL_SCANCODE_A])
+			MovePlayer(map, player, cos(player.angle - M_PI / 2), -sin(player.angle - M_PI / 2), deltaSeconds);
+		if (keys[SDL_SCANCODE_D])
+			MovePlayer(map, player, cos(player.angle + M_PI / 2), -sin(player.angle + M_PI / 2), deltaSeconds);
+		
 		// OTIMIZAÇÃO 6: Normalização de Vetor para movimento diagonal
 		if (inputX != 0.0f || inputY != 0.0f) {
 			float length = std::sqrt(inputX * inputX + inputY * inputY);
@@ -167,9 +294,8 @@ int main(int argc, char* argv[]) {
 		// --- 4. RENDERIZAÇÃO ---
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 		SDL_RenderClear(renderer);
-
-		RenderMap(map, renderer);
-		RenderPlayer(player, renderer);
+				
+		Raycast(map, player, renderer);
 
 		SDL_RenderPresent(renderer);
 
