@@ -27,3 +27,8 @@ _deps/
 
 # ClangD
 .clangd
+
+
+#vs
+.vs
+.vs/
