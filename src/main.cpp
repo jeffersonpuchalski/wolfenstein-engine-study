@@ -1,11 +1,13 @@
+#pragma once 
 #include <iostream>
 #include <cstdint>
 #include <vector>
 #include <tuple>
 #include <cmath> // Adicionado para std::sqrt
 #include <SDL2/SDL.h>
-
-
+#include <sstream> // Necessário para stringstream
+#include <string>
+#include <engine/game/game.hpp>
 
 // Constantes globais para o mapa evitam "Magic Numbers" e cálculos repetitivos
 constexpr int MAP_WIDTH = 8;
@@ -188,8 +190,9 @@ static void Raycast(const MapGrid& map, Player& player, SDL_Renderer* renderer)
 	}
 }
 
-int main(int argc, char* argv[]) {
-
+int main(int argc, char* argv[]) 
+{	
+	Engine::Game::getInstance().run();
 	// Correção: Adicionado os itens faltantes para formar um grid perfeito de 8x4
 	MapGrid map = {
 		// Row 0
@@ -293,19 +296,18 @@ int main(int argc, char* argv[]) {
 
 		// --- 4. RENDERIZAÇÃO ---
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-		SDL_RenderClear(renderer);
-				
+		SDL_RenderClear(renderer);				
 		Raycast(map, player, renderer);
-
 		SDL_RenderPresent(renderer);
 
 		// --- 5. DEBUG ---
 		debugTimer += deltaTimeMs;
-		if (debugTimer >= 500) {
+		if (debugTimer >= 500) {			
 			std::cout << "FPS: " << (deltaTimeMs > 0 ? 1000.0 / deltaTimeMs : 0) << "        \n"
 				<< "FrameTime: " << deltaTimeMs << " ms      \n"
 				<< "\033[2A" << std::flush;
 			debugTimer = 0;
+
 		}
 	}
 

@@ -10,6 +10,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "") # works
+
 # Options
 # 1. Configuração do SDL2 (Dynamic)
 option(SDL_SHARED "Build shared lib" ON)
@@ -38,7 +40,11 @@ else()
 endif()
 
 # Exectubales
-add_executable(wolfenstein src/main.cpp)
+add_executable(wolfenstein src/main.cpp src/engine/game/game.cpp )
+
+# Includes
+target_include_directories(wolfenstein PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
 
 # 3. Linkagem Dinâmica (Simples e Direta)
 if(WOLF3D_VENDORED)
