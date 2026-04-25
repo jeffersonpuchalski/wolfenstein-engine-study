@@ -39,8 +39,11 @@ else()
     message(STATUS "Using system SDL2 library")
 endif()
 
+# Get Sources .cpp blobs from folder src
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+
 # Exectubales
-add_executable(wolfenstein src/main.cpp src/engine/game/game.cpp )
+add_executable(wolfenstein ${SOURCES})
 
 # Includes
 target_include_directories(wolfenstein PRIVATE ${CMAKE_SOURCE_DIR}/include)

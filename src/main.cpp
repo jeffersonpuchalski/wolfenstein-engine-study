@@ -1,13 +1,12 @@
 #pragma once 
-#include <iostream>
+#include <engine/engine.hpp>
 #include <cstdint>
-#include <vector>
 #include <tuple>
 #include <cmath> // Adicionado para std::sqrt
-#include <SDL2/SDL.h>
 #include <sstream> // Necessário para stringstream
 #include <string>
-#include <engine/game/game.hpp>
+
+#include <engine/core/application.hpp>
 
 // Constantes globais para o mapa evitam "Magic Numbers" e cálculos repetitivos
 constexpr int MAP_WIDTH = 8;
@@ -190,130 +189,136 @@ static void Raycast(const MapGrid& map, Player& player, SDL_Renderer* renderer)
 	}
 }
 
-int main(int argc, char* argv[]) 
-{	
-	Engine::Game::getInstance().run();
-	// Correção: Adicionado os itens faltantes para formar um grid perfeito de 8x4
-	MapGrid map = {
-		// Row 0
-		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
-		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
-		// Row 1
-		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
-		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
-		// Row 2
-		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
-		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
-		// Row 3
-		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
-		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
-		// Row 4
-		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
-		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
-		// Row 5
-		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
-		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
-		// Row 6
-		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
-		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
-		// Row 7
-		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
-		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
-	};
-
-	auto player = Player();
-
-	if (SDL_Init(SDL_INIT_VIDEO) != 0) return -1;
-
-	SDL_Window* window = SDL_CreateWindow("wolf3d", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-	if (!window) return 1;
-
-	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-
-	bool running = true;
-	SDL_Event event;
-
-	// OTIMIZAÇÃO 5: Estrutura correta de Game Loop
-	uint64_t lastTime = SDL_GetTicks64();
-	uint64_t debugTimer = 0;
-
-	// Grab mouse for FPS
-	SDL_SetRelativeMouseMode(SDL_TRUE);
-
-
-	while (running) {
-		// --- 1. CÁLCULO DE TEMPO (Deltas e Ticks) ---
-		uint64_t currentTime = SDL_GetTicks64();
-		uint64_t deltaTimeMs = currentTime - lastTime;
-
-		// Cap de 60 FPS (~16.6ms) - Evita aquecer a CPU à toa
-		if (deltaTimeMs < 16) {
-			SDL_Delay(static_cast<Uint32>(16 - deltaTimeMs));
-			currentTime = SDL_GetTicks64();
-			deltaTimeMs = currentTime - lastTime;
-		}
-
-		lastTime = currentTime;
-		float deltaSeconds = deltaTimeMs / 1000.0f; // Usado para a física
-
-		// --- 2. EVENTOS ---
-		while (SDL_PollEvent(&event)) {
-			if (event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)) {
-				running = false;
-			}
-			if (event.type == SDL_MOUSEMOTION) {
-				// xrel e yrel são o deslocamento (delta)
-				int deltaX = event.motion.xrel;
-				int deltaY = event.motion.yrel;
-
-				// Use esses valores para rotacionar sua câmera
-				updateFakeCamera(&player, deltaX, deltaSeconds);
-			}
-		}
-
-		// --- 3. LÓGICA E FÍSICA ---
-		const Uint8* keys = SDL_GetKeyboardState(nullptr);
-		
-		float inputX = 0.0f, inputY = 0.0f;
-
-		if (keys[SDL_SCANCODE_W]) {
-			MovePlayer(map, player, cos(player.angle), -sin(player.angle), deltaSeconds);
-		}
-		if (keys[SDL_SCANCODE_S]) {
-			MovePlayer(map, player, -cos(player.angle), sin(player.angle), deltaSeconds);
-		}		
-		// Strafe correto — perpendicular ao ângulo:
-		if (keys[SDL_SCANCODE_A])
-			MovePlayer(map, player, cos(player.angle - M_PI / 2), -sin(player.angle - M_PI / 2), deltaSeconds);
-		if (keys[SDL_SCANCODE_D])
-			MovePlayer(map, player, cos(player.angle + M_PI / 2), -sin(player.angle + M_PI / 2), deltaSeconds);
-		
-		// OTIMIZAÇÃO 6: Normalização de Vetor para movimento diagonal
-		if (inputX != 0.0f || inputY != 0.0f) {
-			float length = std::sqrt(inputX * inputX + inputY * inputY);
-			MovePlayer(map, player, inputX / length, inputY / length, deltaSeconds);
-		}
-
-		// --- 4. RENDERIZAÇÃO ---
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-		SDL_RenderClear(renderer);				
-		Raycast(map, player, renderer);
-		SDL_RenderPresent(renderer);
-
-		// --- 5. DEBUG ---
-		debugTimer += deltaTimeMs;
-		if (debugTimer >= 500) {			
-			std::cout << "FPS: " << (deltaTimeMs > 0 ? 1000.0 / deltaTimeMs : 0) << "        \n"
-				<< "FrameTime: " << deltaTimeMs << " ms      \n"
-				<< "\033[2A" << std::flush;
-			debugTimer = 0;
-
-		}
-	}
-
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
-	SDL_Quit();
-
+int main(int argc, char* argv[])
+{
+	Application::getInstance().run();
 	return 0;
 }
+// 
+//int main(int argc, char* argv[]) 
+//{	
+//	Engine::Core::Application::getInstance().run();
+//	// Correção: Adicionado os itens faltantes para formar um grid perfeito de 8x4
+//	MapGrid map = {
+//		// Row 0
+//		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
+//		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
+//		// Row 1
+//		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
+//		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
+//		// Row 2
+//		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
+//		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
+//		// Row 3
+//		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
+//		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
+//		// Row 4
+//		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
+//		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
+//		// Row 5
+//		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
+//		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
+//		// Row 6
+//		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
+//		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
+//		// Row 7
+//		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
+//		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
+//	};
+//
+//	auto player = Player();
+//
+//	if (SDL_Init(SDL_INIT_VIDEO) != 0) return -1;
+//
+//	SDL_Window* window = SDL_CreateWindow("wolf3d", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+//	if (!window) return 1;
+//
+//	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+//
+//	bool running = true;
+//	SDL_Event event;
+//
+//	// OTIMIZAÇÃO 5: Estrutura correta de Game Loop
+//	uint64_t lastTime = SDL_GetTicks64();
+//	uint64_t debugTimer = 0;
+//
+//	// Grab mouse for FPS
+//	SDL_SetRelativeMouseMode(SDL_TRUE);
+//
+//
+//	while (running) {
+//		// --- 1. CÁLCULO DE TEMPO (Deltas e Ticks) ---
+//		uint64_t currentTime = SDL_GetTicks64();
+//		uint64_t deltaTimeMs = currentTime - lastTime;
+//
+//		// Cap de 60 FPS (~16.6ms) - Evita aquecer a CPU à toa
+//		if (deltaTimeMs < 16) {
+//			SDL_Delay(static_cast<Uint32>(16 - deltaTimeMs));
+//			currentTime = SDL_GetTicks64();
+//			deltaTimeMs = currentTime - lastTime;
+//		}
+//
+//		lastTime = currentTime;
+//		float deltaSeconds = deltaTimeMs / 1000.0f; // Usado para a física
+//
+//		// --- 2. EVENTOS ---
+//		while (SDL_PollEvent(&event)) {
+//			if (event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)) {
+//				running = false;
+//			}
+//			if (event.type == SDL_MOUSEMOTION) {
+//				// xrel e yrel são o deslocamento (delta)
+//				int deltaX = event.motion.xrel;
+//				int deltaY = event.motion.yrel;
+//
+//				// Use esses valores para rotacionar sua câmera
+//				updateFakeCamera(&player, deltaX, deltaSeconds);
+//			}
+//		}
+//
+//		// --- 3. LÓGICA E FÍSICA ---
+//		const Uint8* keys = SDL_GetKeyboardState(nullptr);
+//		
+//		float inputX = 0.0f, inputY = 0.0f;
+//
+//		if (keys[SDL_SCANCODE_W]) {
+//			MovePlayer(map, player, cos(player.angle), -sin(player.angle), deltaSeconds);
+//		}
+//		if (keys[SDL_SCANCODE_S]) {
+//			MovePlayer(map, player, -cos(player.angle), sin(player.angle), deltaSeconds);
+//		}		
+//		// Strafe correto — perpendicular ao ângulo:
+//		if (keys[SDL_SCANCODE_A])
+//			MovePlayer(map, player, cos(player.angle - M_PI / 2), -sin(player.angle - M_PI / 2), deltaSeconds);
+//		if (keys[SDL_SCANCODE_D])
+//			MovePlayer(map, player, cos(player.angle + M_PI / 2), -sin(player.angle + M_PI / 2), deltaSeconds);
+//		
+//		// OTIMIZAÇÃO 6: Normalização de Vetor para movimento diagonal
+//		if (inputX != 0.0f || inputY != 0.0f) {
+//			float length = std::sqrt(inputX * inputX + inputY * inputY);
+//			MovePlayer(map, player, inputX / length, inputY / length, deltaSeconds);
+//		}
+//
+//		// --- 4. RENDERIZAÇÃO ---
+//		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+//		SDL_RenderClear(renderer);				
+//		Raycast(map, player, renderer);
+//		SDL_RenderPresent(renderer);
+//
+//		// --- 5. DEBUG ---
+//		debugTimer += deltaTimeMs;
+//		if (debugTimer >= 500) {			
+//			std::cout << "FPS: " << (deltaTimeMs > 0 ? 1000.0 / deltaTimeMs : 0) << "        \n"
+//				<< "FrameTime: " << deltaTimeMs << " ms      \n"
+//				<< "\033[2A" << std::flush;
+//			debugTimer = 0;
+//
+//		}
+//	}
+//
+//	SDL_DestroyRenderer(renderer);
+//	SDL_DestroyWindow(window);
+//	SDL_Quit();
+//
+//	return 0;
+//}
