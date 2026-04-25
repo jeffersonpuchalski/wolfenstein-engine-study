@@ -13,7 +13,10 @@ Display::Display(std::string_view name, uint16_t width, uint16_t height)
 		static_cast<int>(wHeight),
 		SDL_WINDOW_SHOWN
 		);
-	if(!window) throw std::exception::exception("Error in init SDL_WINDOW");
+	if(!window)
+	{
+		throw std::runtime_error("Error in init SDL_WINDOW");
+	}
 }
 
 Display::Display(SDL_Window* window, std::string_view name)
@@ -22,7 +25,7 @@ Display::Display(SDL_Window* window, std::string_view name)
 	{
 		titleName = name;
 	}
-	throw std::exception::exception("Error in Init Window");
+	throw std::runtime_error("Error in Init Window");
 	
 }
 

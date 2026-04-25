@@ -10,7 +10,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "") # works
 
 # Options
 # 1. Configuração do SDL2 (Dynamic)
@@ -18,6 +17,13 @@ option(SDL_SHARED "Build shared lib" ON)
 option(SDL_STATIC "Build static lib" OFF)
 # 2. Configuração do SDL2 (Vendored)
 option(WOLF3D_VENDORED "Use vendored SDL2 library" ON)
+# 3. Configuração do Editor (IntelliSense)
+option(WOLF3D_INTELLISENSE "Enable VS Code IntelliSense configuration" ON)
+
+# Enable The Compile command if option is on
+if(WOLF3D_INTELLISENSE)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "${CMAKE_CURRENT_SOURCE_DIR}/compile_commands.json" FORCE)
+endif()
 
 include(FetchContent)
 

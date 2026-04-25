@@ -2,6 +2,7 @@
 
 #include <engine/engine.hpp>
 #include <engine/core/display.hpp>
+#include <engine/core/render.hpp>
 
 class Application
 {
@@ -34,6 +35,7 @@ private:
 
 	// Var instances
 	std::unique_ptr<Display> display;
+	std::shared_ptr<Render> render;
 	bool running = true;
 
 };

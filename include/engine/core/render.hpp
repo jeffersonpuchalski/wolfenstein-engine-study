@@ -8,9 +8,13 @@
 struct Polygons
 {
 	Position pos;
+	float width;
+	float height;
 };
 
 using Brushes = std::vector<Polygons>;
+
+
 
 class Render
 {
@@ -20,6 +24,9 @@ class Render
 	void DrawEntities(const Brushes& objects, SDL_Renderer* renderer);
 	void Present();
 	void Swap();
+
+	void RenderMap(const MapGrid& map, SDL_Renderer* renderer);
+	void RenderPlayer(const Player& player, SDL_Renderer* renderer);
 
 private:
 	SDL_Renderer* renderer;

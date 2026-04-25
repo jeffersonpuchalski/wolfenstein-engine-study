@@ -17,6 +17,7 @@ void Application::run()
 { 
 	LOG_INFO("Application is Running");
 	display = std::make_unique<Display>("wolf3d", 800, 600);
+	render = std::make_shared<Renderer>(display->getNativeWindow());
 	
 	while(running)
 	{
