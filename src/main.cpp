@@ -1,12 +1,7 @@
 #pragma once 
-#include <engine/engine.hpp>
-#include <cstdint>
-#include <tuple>
-#include <cmath> // Adicionado para std::sqrt
-#include <sstream> // Necessário para stringstream
-#include <string>
 
-#include <engine/core/application.hpp>
+#include <iostream>
+#include <engine/core/engine.hpp>
 
 // Constantes globais para o mapa evitam "Magic Numbers" e cálculos repetitivos
 constexpr int MAP_WIDTH = 8;
@@ -191,7 +186,12 @@ static void Raycast(const MapGrid& map, Player& player, SDL_Renderer* renderer)
 
 int main(int argc, char* argv[])
 {
-	Application::getInstance().run();
+	// Correção: Usar a classe Engine para gerenciar o ciclo de vida do jogo
+	Engine& engine = Engine::getInstance();
+	// Correção: Chamar os métodos de inicialização, execução e desligamento
+	engine.run();
+	engine.shutdown();
+	// Correção: Retornar 0 para indicar que o programa terminou com sucesso
 	return 0;
 }
 // 
@@ -199,32 +199,7 @@ int main(int argc, char* argv[])
 //{	
 //	Engine::Core::Application::getInstance().run();
 //	// Correção: Adicionado os itens faltantes para formar um grid perfeito de 8x4
-//	MapGrid map = {
-//		// Row 0
-//		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
-//		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
-//		// Row 1
-//		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
-//		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
-//		// Row 2
-//		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
-//		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
-//		// Row 3
-//		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
-//		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
-//		// Row 4
-//		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
-//		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
-//		// Row 5
-//		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
-//		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
-//		// Row 6
-//		MapCell(PlaneType::WALL), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
-//		MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR), MapCell(PlaneType::WALL),
-//		// Row 7
-//		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
-//		MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL), MapCell(PlaneType::WALL),
-//	};
+
 //
 //	auto player = Player();
 //

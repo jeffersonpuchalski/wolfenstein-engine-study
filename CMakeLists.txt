@@ -6,11 +6,13 @@ project(wolfenstein LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+#Configuração do SDL2 (Dynamic)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "") # works
+# Enable generation of compile_commands.json for better integration with code editors and tools
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "${CMAKE_SOURCE_DIR}") # works
 
 # Options
 # 1. Configuração do SDL2 (Dynamic)
@@ -18,11 +20,12 @@ option(SDL_SHARED "Build shared lib" ON)
 option(SDL_STATIC "Build static lib" OFF)
 # 2. Configuração do SDL2 (Vendored)
 option(WOLF3D_VENDORED "Use vendored SDL2 library" ON)
-
+# 3. Configuração do SDL2 (System)
 include(FetchContent)
 
-# Check if we are using the vendored SDL2 library or the system one and print a message accordingly
-if(WOLF3D_VENDORED)    
+# Check if we are using the vendored SDL2 library or 
+# the system one and print a message accordingly
+if(WOLF3D_VENDORED)
     # Declare the SDL2 library to be fetched from its GitHub repository, specifying the desired release tag
     FetchContent_Declare(
         SDL2

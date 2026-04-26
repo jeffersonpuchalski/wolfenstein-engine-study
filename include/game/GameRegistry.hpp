@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include<engine/core/component.hpp>
 #include <engine/core/entity.hpp>
 
 class GameRegistry
@@ -13,12 +14,17 @@ public:
 		static GameRegistry instance;
 		return instance;
 	}
-	void addAsset();
+	/**
+	 * Add a entity to GameEntity Registry
+	 */	
+	void addAsset(Component component);
+	// Delete a entity from GameEntity Registry
+	void deleteAsset(Component component);
 
 private:
 	GameRegistry()
 	{
-		registry.create();		
+		registry.create();	
 	}
 
 	// Deletamos as cópias e movimentos (Rule of 5 parcial)
@@ -28,6 +34,4 @@ private:
 	GameRegistry& operator=(GameRegistry&&) = delete;      // Sem atribuição de movimento
 	// Registry and Assets
 	Registry registry;
-	TAssets assets = {};
-	
 };

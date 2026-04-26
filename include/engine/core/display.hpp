@@ -30,5 +30,7 @@ private:
 	uint16_t wWidth = 0;
 	uint16_t wHeight = 0;
 	SDL_Window* window = nullptr;
+
+	bool isOpen = false;
 };
 
