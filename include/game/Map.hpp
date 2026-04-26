@@ -1,7 +1,8 @@
 #pragma once
-#include <engine/core/engine.hpp>
 
-enum class PlaneType : uint8_t
+#include <iostream>
+
+enum class CellType : uint8_t
 {
     NONE, WALL, FLOOR
 };
@@ -9,6 +10,7 @@ enum class PlaneType : uint8_t
 class MapCell
 {
 public:
-    MapCell(PlaneType wallType) : wallType(wallType) {}
-    PlaneType wallType;
+    MapCell() = default;
+    explicit MapCell(const CellType _type) : cellType(_type) {}
+    CellType cellType ;
 };

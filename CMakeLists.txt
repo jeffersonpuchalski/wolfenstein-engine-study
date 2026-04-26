@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.10...3.21)
 
 project(wolfenstein LANGUAGES CXX)
 
@@ -11,8 +11,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# Enable generation of compile_commands.json for better integration with code editors and tools
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "${CMAKE_SOURCE_DIR}") # works
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
+
 
 # Options
 # 1. Configuração do SDL2 (Dynamic)
@@ -20,7 +20,6 @@ option(SDL_SHARED "Build shared lib" ON)
 option(SDL_STATIC "Build static lib" OFF)
 # 2. Configuração do SDL2 (Vendored)
 option(WOLF3D_VENDORED "Use vendored SDL2 library" ON)
-# 3. Configuração do SDL2 (System)
 include(FetchContent)
 
 # Check if we are using the vendored SDL2 library or 
@@ -36,32 +35,54 @@ if(WOLF3D_VENDORED)
     # Make Avaliable SDL2
     FetchContent_MakeAvailable(SDL2)
     message(STATUS "Using vendored SDL2 library")
-    
+
+    # SDL True Type Font Library
+    FetchContent_Declare(
+            SDL_ttf
+            GIT_REPOSITORY https://github.com/libsdl-org/SDL_ttf.git
+            GIT_TAG release-2.24.0
+    )
+
+    FetchContent_MakeAvailable(SDL_ttf)
+    message(STATUS "Using vendored SDL_TTF library")
+
 else()
     find_package(SDL2 REQUIRED)
+    find_package(SDL_ttf REQUIRED)
     message(STATUS "Using system SDL2 library")
 endif()
 
-# Get Sources .cpp blobs from folder src
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+# --- Google Test ---
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.14.0
+)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
 
-# Exectubales
-add_executable(wolfenstein ${SOURCES})
+# --- Lib do jogo (sem main.cpp) ---
+file(GLOB_RECURSE GAME_SOURCES "src/*.cpp")
+list(REMOVE_ITEM GAME_SOURCES "${CMAKE_SOURCE_DIR}/src/main.cpp")
 
-# Includes
-target_include_directories(wolfenstein PRIVATE ${CMAKE_SOURCE_DIR}/include)
+add_library(wolfenstein_lib STATIC ${GAME_SOURCES})
+target_include_directories(wolfenstein_lib PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
-
-# 3. Linkagem Dinâmica (Simples e Direta)
 if(WOLF3D_VENDORED)
-    # FetchContent creates raw targets without namespaces
-    target_link_libraries(wolfenstein PRIVATE SDL2main SDL2)
+    target_link_libraries(wolfenstein_lib PUBLIC SDL2 SDL2_ttf)
 else()
-    # find_package creates aliased targets with namespaces
-    target_link_libraries(wolfenstein PRIVATE SDL2::SDL2main SDL2::SDL2)
+    target_link_libraries(wolfenstein_lib PUBLIC SDL2::SDL2)
 endif()
 
-# 4. A MÁGICA: Copiar a DLL automaticamente para a pasta do build
+# --- Executável principal ---
+add_executable(wolfenstein src/main.cpp)
+
+if(WOLF3D_VENDORED)
+    target_link_libraries(wolfenstein PRIVATE wolfenstein_lib SDL2main)
+else()
+    target_link_libraries(wolfenstein PRIVATE wolfenstein_lib SDL2::SDL2main)
+endif()
+
 if(WIN32)
     add_custom_command(TARGET wolfenstein POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -70,3 +91,17 @@ if(WIN32)
         COMMAND_EXPAND_LISTS
     )
 endif()
+
+# --- Testes ---
+enable_testing()
+include(GoogleTest)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
+endif()
+
+file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
+add_executable(wolfenstein_tests ${TEST_SOURCES})
+target_link_libraries(wolfenstein_tests PRIVATE wolfenstein_lib GTest::gtest_main)
+gtest_discover_tests(wolfenstein_tests)
+

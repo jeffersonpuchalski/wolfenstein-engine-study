@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <fstream>
 
+#include "logger.hpp"
+
 /**
  * ╔══════════╦══════════╦═══════════════════════════════╗
    ║  width   ║  height  ║         dados do mapa         ║
@@ -49,9 +51,7 @@ void MapSerializer::saveMap(
     }
     if (ec)
     {
-        throw std::runtime_error(
-            strcat("Error in Saving Map file: ",
-                   ec.message().c_str()));
+        std::cerr << "Error in Saving Map file: " << ec.message();
     }
 }
 
@@ -61,7 +61,7 @@ void MapSerializer::saveMap(
     std::string_view path) noexcept
 {
     std::error_code ec;
-    std::string_view filePath = path.data() + std::string("/") + "map.dat";
+    std::string filePath = path.data() + std::string("/") + "map.dat";
     if (fs::exists(path, ec))
     {
         // Load the Header file to check who data information
@@ -69,7 +69,8 @@ void MapSerializer::saveMap(
         file.read(reinterpret_cast<char*>(&header.width), sizeof(header.width));
         file.read(reinterpret_cast<char*>(&header.height), sizeof(header.height));
         // Resize map For new Data - Map can be null
-        map.resize(header.width * header.height);
+        size_t newSize = header.width * header.height;
+        map.resize(newSize);
         // Load the data
         file.read(reinterpret_cast<char*>(map.data()), map.size() * sizeof(MapCell));
         return file.good(); // true se leu tudo sem erro

@@ -35,3 +35,4 @@ private:
 	// Registry and Assets
 	Registry registry;
 };
+

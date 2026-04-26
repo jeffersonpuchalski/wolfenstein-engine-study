@@ -1,5 +1,6 @@
 #pragma once 
 
+#include <vector>
 #include <game/Map.hpp>
 
 struct MapHeader

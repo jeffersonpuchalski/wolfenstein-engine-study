@@ -1,10 +1,12 @@
 #pragma once
 
-#include <engine/engine.hpp>
-#include <string>
+#define SDL_MAIN_HANDLED
+#include <SDL2/SDL.h>
 #include <string_view>
+#include <string>
+#include <cstdint>
 #include <exception>
-
+#include <stdexcept>
 
 class Display
 {
@@ -17,9 +19,15 @@ public:
 	~Display();
 
 	// Return Native Window by ref
-	inline SDL_Window* getNativeWindow() const
+	[[nodiscard]]  SDL_Window* getNativeWindow() const
 	{
 		return window;
+	}
+
+	[[nodiscard]] std::tuple<int, int> getWindowSize() const {
+		int x, y = 0;
+		SDL_GetWindowSize(window,&x, &y);
+		return std::make_tuple(x,y);
 	}
 
 private:

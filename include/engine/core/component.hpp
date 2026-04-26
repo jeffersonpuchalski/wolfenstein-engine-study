@@ -49,12 +49,9 @@ public:
 	}
 };
 
-
 class Component
 {
-  public:
-    const std::string_view& getName();
-    const std::string_view& getId();
-private:
-    Entity _id;
+public:
+	Entity e;
+	Entity getId() { return e;}
 };
