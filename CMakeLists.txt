@@ -89,9 +89,17 @@ if(WIN32)
         $<TARGET_RUNTIME_DLLS:wolfenstein>
         $<TARGET_FILE_DIR:wolfenstein>
         COMMAND_EXPAND_LISTS
+        COMMENT "Copying DLLS to bin folder"
     )
 endif()
 
+# Copy assets to bin build
+add_custom_command(TARGET wolfenstein POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+    "$<TARGET_FILE_DIR:wolfenstein>/assets"
+    COMMENT "Copying assets to bin folder"
+)
 # --- Testes ---
 enable_testing()
 include(GoogleTest)

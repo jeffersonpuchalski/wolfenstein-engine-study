@@ -4,7 +4,12 @@
 
 // SystemIncludes
 
-#include<SDL2/SDL.h>
+#ifdef _WIN32
+    #include<SDL2/SDL>
+#elif defined(__APPLE__)
+    #include <SDL2/SDL_revision.h>
+#endif
+
 #include<memory>
 // Engine Include
 #include <logger.hpp>
@@ -39,7 +44,9 @@ public:
 
 	[[nodiscard]] SDL_Renderer* getRenderer() const { return renderer; }
 
-	void DrawRenderInfo(const char* text) noexcept;
+	void DrawRenderInfo() noexcept;
+    
+    void DrawEngineInfo(float deltaTime) noexcept;
 
 private:
 	// Provide a private default constructor that initializes the Display member.
@@ -51,7 +58,6 @@ private:
 	std::unique_ptr<Display> display;
 	uint64_t lastTime = 0;
 	std::atomic_bool running = true;
-	bool engineInfoHasDraw = false;
 
 	std::tuple<int, int> windowSize;
 
@@ -59,11 +65,13 @@ private:
 	SDL_Renderer* renderer = nullptr;
 
 	SDL_Surface* engineInfoSurface = nullptr;
-	SDL_Surface* renderInfoSurface = nullptr;
+    SDL_Surface* engineGameInfoSurface = nullptr;
 
 	SDL_Texture* engineInfoTexture = nullptr;
-	SDL_Texture* renderInfoTexture = nullptr;
+    SDL_Texture* engineBuildInfoTexture = nullptr;
 
 	TTF_Font* engineFont = nullptr;
+    
 	SDL_Rect engineInfoDest;
+    SDL_Rect engineGameInfoDest;
 };

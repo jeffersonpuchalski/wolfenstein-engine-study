@@ -36,8 +36,8 @@ TEST_F(MapSerializerTest, LoadReturnsFalseWhenFileDoesNotExist)
 TEST_F(MapSerializerTest, SaveAndLoadRoundTrip)
 {
     std::vector<MapCell> original = {
-        MapCell(PlaneType::WALL),  MapCell(PlaneType::WALL),
-        MapCell(PlaneType::FLOOR), MapCell(PlaneType::FLOOR),
+        MapCell(CellType::WALL),  MapCell(CellType::WALL),
+        MapCell(CellType::FLOOR), MapCell(CellType::FLOOR),
     };
     MapHeader header{2, 2};
 
@@ -50,5 +50,5 @@ TEST_F(MapSerializerTest, SaveAndLoadRoundTrip)
     EXPECT_TRUE(result);
     ASSERT_EQ(loaded.size(), original.size());
     for (size_t i = 0; i < original.size(); i++)
-        EXPECT_EQ(loaded[i].wallType, original[i].wallType);
+        EXPECT_EQ(loaded[i].cellType, original[i].cellType);
 }

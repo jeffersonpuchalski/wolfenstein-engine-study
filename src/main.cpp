@@ -298,8 +298,6 @@
 // 	return 0;
 // }
 
-#pragma once 
-
 #include <engine/core/engine.hpp>
 #include <game/Game.hpp>
 
