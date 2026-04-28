@@ -1,11 +1,12 @@
 #pragma once
 
 #define SDL_MAIN_HANDLED
+#include "game/GameResourceManager.hpp"
 
 // SystemIncludes
 
 #ifdef _WIN32
-    #include<SDL2/SDL>
+    #include<SDL2/SDL.h>
 #elif defined(__APPLE__)
     #include <SDL2/SDL_revision.h>
 #endif
@@ -66,12 +67,15 @@ private:
 
 	SDL_Surface* engineInfoSurface = nullptr;
     SDL_Surface* engineGameInfoSurface = nullptr;
+	SDL_Surface* engineGameFpsSurface = nullptr;
 
 	SDL_Texture* engineInfoTexture = nullptr;
     SDL_Texture* engineBuildInfoTexture = nullptr;
 
-	TTF_Font* engineFont = nullptr;
+	std::unique_ptr<GameResourceManager> gameResourceManager = nullptr;
+
+	FontWeakPtr engineFont;
     
-	SDL_Rect engineInfoDest;
-    SDL_Rect engineGameInfoDest;
+	SDL_Rect engineInfoDest{};
+    SDL_Rect engineGameInfoDest{};
 };

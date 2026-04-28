@@ -27,7 +27,7 @@ TEST_F(MapSerializerTest, LoadReturnsFalseWhenFileDoesNotExist)
     std::vector<MapCell> map;
     MapHeader header{8, 8};
 
-    bool result = ms.loadMap(map, header, "./nao_existe");
+    const bool result = ms.loadMap(map, header, "./nao_existe");
 
     EXPECT_FALSE(result);
     EXPECT_TRUE(map.empty());
@@ -45,7 +45,7 @@ TEST_F(MapSerializerTest, SaveAndLoadRoundTrip)
 
     std::vector<MapCell> loaded;
     MapHeader loadedHeader{0, 0};
-    bool result = ms.loadMap(loaded, loadedHeader, TEST_DIR);
+    const bool result = ms.loadMap(loaded, loadedHeader, TEST_DIR);
 
     EXPECT_TRUE(result);
     ASSERT_EQ(loaded.size(), original.size());

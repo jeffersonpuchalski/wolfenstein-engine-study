@@ -15,7 +15,7 @@ constexpr auto PADDING_Y = 8;
 
 Engine::Engine()
 {
-    LOG_DEBUG("Starting SDL...");
+    LOG_INFO("Engine created. Initializing");
     if (const auto initCode = SDL_Init(SDL_INIT_VIDEO); initCode < 0)
     {
         auto initError = SDL_GetError();
@@ -29,6 +29,7 @@ Engine::Engine()
         throw std::runtime_error("An error has occurred.\nCheck logs");
     }
     init();
+    LOG_INFO("Engine initialized");
 };
 
 void Engine::init()
@@ -43,13 +44,16 @@ void Engine::init()
         throw std::runtime_error("Failed to create renderer");
     }
     
-    // We need find the relative path from font
-    
-    const auto path = "assets/fonts/wolfenstein.ttf";
-    engineFont = TTF_OpenFont(path, FONT_SIZE);
-    if (engineFont == nullptr) {
-        LOG_ERROR("Failed to open font");
-        throw std::runtime_error("Failed to open font");
+    // Get the Game Resource Manager
+    gameResourceManager = std::make_unique<GameResourceManager>();
+    LOG_INFO("Loading engine assets");
+    gameResourceManager->buildGameFontCache("assets/fonts/", FONT_SIZE);
+    try {
+        if (gameResourceManager->getFontCache().empty()) throw std::runtime_error("No font cache found");
+        LOG_INFO("Font Cache build with numbers of fonts: ", gameResourceManager->getFontCache().size());
+    }
+    catch (std::exception& e) {
+        LOG_ERROR(e.what());
     }
     // Get Size
     windowSize = display->getWindowSize();
@@ -62,24 +66,34 @@ void Engine::init()
                                                                     now.time_since_epoch()
                                                                     ).count();
     oss << "Wolf3d Version: " << VERSION << " build: "<< ms;
-    // Create Surface
-    engineInfoSurface = TTF_RenderText_Blended(
-                                               engineFont,
-                                               oss.str().c_str(),
-                                               SDL_Color{255,255,255,255}
-                                               );
+
+    const auto weakFont = gameResourceManager->getFontAsset( "wolfenstein.ttf", FONT_SIZE).lock();
+    if (weakFont)
+    {
+        engineInfoSurface = TTF_RenderText_Blended(
+           weakFont.get(),
+           oss.str().c_str(),
+           SDL_Color{255,255,255,255});
+        // Create the Surface
+        engineGameInfoSurface = TTF_RenderText_Blended(weakFont.get(),
+            oss.str().c_str(), SDL_Color{255,255,255,255}
+            );
+    }
+
     // clean String and reset Buffer
     oss.str("");
     oss.clear();
     // Build FPS:
     oss << "FPS: ";
-    
-    // Create the Surface
-    engineGameInfoSurface = TTF_RenderText_Blended(engineFont, oss.str().c_str(), SDL_Color{255,255,255,255});
-    
-    
-    if (engineInfoSurface == nullptr || engineGameInfoSurface == nullptr) {
-        LOG_ERROR("Failed to create surface");
+
+    if (engineInfoSurface == nullptr)
+    {
+        LOG_ERROR("Failed to create engine info texture buffer");
+        throw std::runtime_error("Failed to create engine info texture");
+    }
+    if (engineGameInfoSurface == nullptr) {
+        LOG_ERROR("Failed to create game info texture buffer");
+        throw std::runtime_error("Failed to create game info texture");
     }
 
     // Engine info Texture
@@ -87,9 +101,17 @@ void Engine::init()
     engineBuildInfoTexture = SDL_CreateTextureFromSurface(renderer, engineGameInfoSurface);
 
 
-    if (engineInfoTexture == nullptr || engineBuildInfoTexture == nullptr) {
-        LOG_ERROR("Failed to create texture");
+    if (engineInfoTexture == nullptr )
+    {
+        LOG_ERROR("Failed to create engine info texture");
+        throw std::runtime_error("Failed to create engine info texture");
     }
+
+    if (engineBuildInfoTexture == nullptr) {
+        LOG_ERROR("Failed to create engine build texture");
+        throw std::runtime_error("Failed to create engine info texture");
+    }
+
     // Build Engine Info
     engineInfoDest = {
         std::get<0>(windowSize) - (PADDING_X + engineInfoSurface->w),
@@ -129,23 +151,28 @@ void Engine::DrawEngineInfo(float deltaTime) noexcept
 {
     // Calculate FPS and Print
     if (deltaTime <= 0.0f) return;
+    SDL_Texture* fpsInfoTexture = nullptr;
+    SDL_Rect fpsInfoDest;
+
     int fps = static_cast<int>(1.0f / deltaTime);
     std::string value = std::to_string(fps);
     std::cout << value.c_str() << std::endl;
-    auto fpsInfoSurface = TTF_RenderText_Blended(engineFont, value.c_str(), SDL_Color{255,255,255,255});
-    if(!fpsInfoSurface)
-    {
-        LOG_ERROR("Error in FPS construct");
-        return;
+    if ( auto weakFontPrt = engineFont.lock()) {
+        auto fpsInfoSurface = TTF_RenderText_Blended(weakFontPrt.get(), value.c_str(), SDL_Color{255,255,255,255});
+        if(!fpsInfoSurface)
+        {
+            LOG_ERROR("Error in FPS construct");
+            return;
+        }
+        fpsInfoTexture = SDL_CreateTextureFromSurface(renderer, fpsInfoSurface);
+        fpsInfoDest = {
+            32,
+            0,
+            fpsInfoSurface->w,
+            fpsInfoSurface->h,
+        };
     }
-    auto fpsInfoTexture = SDL_CreateTextureFromSurface(renderer, fpsInfoSurface);
-    auto fpsInfoDest = SDL_Rect {
-        32,
-        0,
-        fpsInfoSurface->w,
-        fpsInfoSurface->h,
-    };
-    SDL_FreeSurface(fpsInfoSurface);
+
     // Render
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderCopy(getRenderer(), fpsInfoTexture, nullptr, &fpsInfoDest);

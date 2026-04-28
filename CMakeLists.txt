@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10...3.21)
+cmake_minimum_required(VERSION 3.0...3.21)
 
 project(wolfenstein LANGUAGES CXX)
 
@@ -12,6 +12,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
+set (CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
 
 # Options
@@ -108,8 +109,32 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -fprofile-arcs -ftest-coverage")
 endif()
 
+
 file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
 add_executable(wolfenstein_tests ${TEST_SOURCES})
 target_link_libraries(wolfenstein_tests PRIVATE wolfenstein_lib GTest::gtest_main)
 gtest_discover_tests(wolfenstein_tests)
+
+add_custom_command(TARGET wolfenstein_tests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+    "$<TARGET_FILE_DIR:wolfenstein_tests>/assets"
+    COMMENT "A copiar assets para a pasta de testes"
+)
+
+target_compile_definitions(wolfenstein_tests PRIVATE
+        TEST_DATA_DIR="$<TARGET_FILE_DIR:wolfenstein_tests>/assets/"
+)
+
+find_program(OPENCPPCOVERAGE_EXE OpenCppCoverage)
+
+if(OPENCPPCOVERAGE_EXE)
+    if(MSVC)
+        add_custom_target(generate_coverage
+                COMMAND OpenCppCoverage --sources ${CMAKE_SOURCE_DIR} --export_type html:coverage_report -- ctest -C Debug
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                COMMENT "Gerando relatório de cobertura com OpenCppCoverage..."
+        )
+    endif()
+endif()
 
