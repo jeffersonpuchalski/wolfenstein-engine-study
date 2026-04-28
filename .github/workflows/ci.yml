@@ -42,7 +42,8 @@ jobs:
         run: |
           lcov --capture \
             --directory build \
-            --output-file coverage.info
+            --output-file coverage.info \
+            --ignore-errors mismatch
           lcov --remove coverage.info \
             '/usr/*' \
             '*/build/_deps/*' \
