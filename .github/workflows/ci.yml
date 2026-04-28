@@ -19,17 +19,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y lcov libfreetype6-dev
 
-      # Caches the entire build dir so FetchContent deps (SDL2, SDL_ttf, GTest)
-      # don't need to be re-downloaded/compiled on every push.
-      - name: Cache CMake build
+      # Only caches build/_deps (SDL2, SDL_ttf, GTest sources + compiled libs).
+      # Key changes only when dep versions in CMakeLists.txt change.
+      # Game source is small (~10 files) and recompiles in seconds each run.
+      - name: Cache FetchContent deps
         uses: actions/cache@v4
         with:
-          path: build
-          key: ${{ runner.os }}-cmake-${{ hashFiles('CMakeLists.txt') }}
-          restore-keys: ${{ runner.os }}-cmake-
+          path: build/_deps
+          key: ${{ runner.os }}-deps-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: ${{ runner.os }}-deps-
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DFETCHCONTENT_UPDATES_DISCONNECTED=ON
 
       - name: Build tests
         run: cmake --build build --target wolfenstein_tests -j$(nproc)
