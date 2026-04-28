@@ -46,6 +46,7 @@ bool GameResourceManager::buildGameFontCache(const std::filesystem::path &fontPa
             LOG_INFO("No regular files ");
         }
         if (counter <= 0) return false;
+        return true;
     });
     // for (const auto& dirEntry : dirRec) {
     //     if (dirEntry.is_regular_file()) {
@@ -93,6 +94,7 @@ bool GameResourceManager::buildGameTextureCache(const std::filesystem::path &fon
         } else {
             LOG_INFO("No regular files ");
         }
+        return true;
     });
     // for (const auto& dirEntry : dirRec) {
     //     if (dirEntry.is_regular_file()) {
