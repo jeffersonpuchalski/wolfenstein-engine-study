@@ -43,7 +43,7 @@ void Engine::init()
         LOG_ERROR("Failed to create renderer");
         throw std::runtime_error("Failed to create renderer");
     }
-    
+
     // Get the Game Resource Manager
     gameResourceManager = std::make_unique<GameResourceManager>();
     LOG_INFO("Loading engine assets");
@@ -133,7 +133,7 @@ void Engine::init()
     SDL_FreeSurface(engineGameInfoSurface);
 }
 
-void Engine::DrawRenderInfo() noexcept
+void Engine::DrawRenderInfo() const noexcept
 {
     if (engineInfoTexture == nullptr || engineBuildInfoTexture == nullptr) {
         LOG_ERROR("Failed to load texture ...");
@@ -147,7 +147,7 @@ void Engine::DrawRenderInfo() noexcept
     SDL_RenderCopy(getRenderer(), engineInfoTexture, nullptr, &engineInfoDest);
 }
 
-void Engine::DrawEngineInfo(float deltaTime) noexcept
+void Engine::DrawEngineInfo(const float deltaTime) const noexcept
 {
     // Calculate FPS and Print
     if (deltaTime <= 0.0f) return;
@@ -228,6 +228,7 @@ void Engine::shutdown()
     LOG_INFO("Engine is shutting down");
     SDL_DestroyTexture(engineInfoTexture);
     SDL_DestroyTexture(engineBuildInfoTexture);
+
     TTF_Quit();
     
     display = nullptr;

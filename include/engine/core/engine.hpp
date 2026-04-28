@@ -45,9 +45,9 @@ public:
 
 	[[nodiscard]] SDL_Renderer* getRenderer() const { return renderer; }
 
-	void DrawRenderInfo() noexcept;
+	void DrawRenderInfo() const noexcept;
     
-    void DrawEngineInfo(float deltaTime) noexcept;
+    void DrawEngineInfo(float deltaTime) const noexcept;
 
 private:
 	// Provide a private default constructor that initializes the Display member.
