@@ -13,12 +13,8 @@
 
 #include<memory>
 // Engine Include
-#include <logger.hpp>
 #include <engine/core/IGame.hpp>
 #include <engine/core/display.hpp>
-
-#include "SDL_ttf.h"
-
 
 class Engine
 {
@@ -58,7 +54,7 @@ private:
 	// Var instances
 	std::unique_ptr<Display> display;
 	uint64_t lastTime = 0;
-	std::atomic_bool running = true;
+	bool running = true;
 
 	std::tuple<int, int> windowSize;
 
